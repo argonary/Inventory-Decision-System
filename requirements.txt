@@ -1,0 +1,10 @@
+pandas
+numpy
+pyarrow
+lightgbm
+fastapi
+uvicorn
+pydantic
+streamlit
+requests
+plotly
