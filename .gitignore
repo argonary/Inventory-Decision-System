@@ -1,0 +1,31 @@
+# =========================
+# Python / Virtual Envs
+# =========================
+__pycache__/
+*.pyc
+.env
+venv/
+.venv/
+
+# =========================
+# Jupyter (defensive ignore)
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Raw data (large, regenerable)
+# =========================
+data/raw/train.csv
+data/raw/test.csv
+
+# =========================
+# Derived / experimental data
+# =========================
+data/processed/
+data/snapshots/experimental/
+
+# =========================
+# OS / Editor noise
+# =========================
+.DS_Store
+Thumbs.db
