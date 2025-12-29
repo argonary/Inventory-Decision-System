@@ -5,178 +5,190 @@ import numpy as np
 import plotly.graph_objects as go
 
 # =====================================================
-# Config
+# App Config
 # =====================================================
 
-API_URL = "http://127.0.0.1:8000/forecast-to-orders"
-FEATURE_PATH = "data/snapshots/favorita_test_featured_2016Q1.parquet"
+API_BASE_URL = "http://127.0.0.1:8000"
 
-st.set_page_config(page_title="Inventory Decision System", layout="wide")
+DEFAULT_STORE = 44
+DEFAULT_DATE = "2016-04-21"
+DEFAULT_SERVICE_LEVEL = 0.90
+DEFAULT_CAPACITY = 300
+
+st.set_page_config(
+    page_title="Inventory Decision System",
+    layout="wide",
+)
 
 st.title("📦 Inventory Ordering Decision Tool")
 st.caption(
     "Quantile-based inventory decisions with hard capacity constraints "
-    "(served via FastAPI)"
+    "(Streamlit client → FastAPI backend)"
 )
 
 # =====================================================
-# Load feature data (for UI only)
+# Sidebar — API Status
 # =====================================================
 
-@st.cache_data
-def load_feature_data():
-    df = pd.read_parquet(FEATURE_PATH)
-    df["date"] = pd.to_datetime(df["date"])
-    return df
+with st.sidebar:
+    st.header("API Status")
 
-df_features = load_feature_data()
+    try:
+        health = requests.get(f"{API_BASE_URL}/health", timeout=2).json()
+        version = requests.get(f"{API_BASE_URL}/version", timeout=2).json()
+
+        st.success("API is running")
+        st.caption(f"Model version: {version['model_version']}")
+        st.caption(f"Dataset mode: {version['dataset_mode']}")
+        st.caption(f"Snapshot: {version['snapshot']}")
+
+    except Exception:
+        st.error("API not reachable")
+        st.stop()
 
 # =====================================================
-# Sidebar — Inputs
+# Sidebar — Decision Inputs
 # =====================================================
 
 with st.sidebar:
     st.header("Decision Inputs")
 
-    date = st.date_input(
-        "Order Date",
-        value=df_features["date"].min().date(),
-        min_value=df_features["date"].min().date(),
-        max_value=df_features["date"].max().date(),
+    store_nbr = st.number_input(
+        "Store number",
+        min_value=1,
+        value=DEFAULT_STORE,
     )
 
-    valid_stores = sorted(
-        df_features[df_features["date"].dt.date == date]["store_nbr"].unique()
+    date = st.text_input(
+        "Decision date (YYYY-MM-DD)",
+        value=DEFAULT_DATE,
     )
-    store_nbr = st.selectbox("Store Number", valid_stores)
 
     service_level = st.selectbox(
-        "Service Level",
+        "Service level",
         options=[0.90, 0.95],
         format_func=lambda x: f"P{int(x*100)}",
+        index=0,
     )
 
     st.divider()
     st.subheader("Capacity Policy")
 
     capacity_units = st.number_input(
-        "Total Capacity (Units)",
+        "Total capacity (units)",
         min_value=1,
-        value=300,
+        value=DEFAULT_CAPACITY,
         step=25,
-    )
-
-    fill_capacity = st.checkbox(
-        "Force fill capacity (allow orders > forecast)",
-        value=False,
-        help="Unchecked = never exceed per-SKU forecast (recommended)",
     )
 
     st.divider()
     st.subheader("SKU Input")
 
-    uploaded_csv = st.file_uploader("Upload SKU list (CSV)", type=["csv"])
+    if "items_df" not in st.session_state:
+        st.session_state["items_df"] = None
 
-    items = []
+    uploaded_csv = st.file_uploader(
+        "Upload SKU payload (CSV)",
+        type=["csv"],
+        help="CSV must contain columns: item_nbr, onpromotion",
+    )
+
+    if st.button("Load demo payload"):
+        demo_df = pd.read_csv("ui/test_payload.csv")
+        st.session_state["items_df"] = demo_df
 
     if uploaded_csv:
-        csv_df = pd.read_csv(uploaded_csv)
-        if not {"item_nbr", "onpromotion"}.issubset(csv_df.columns):
+        df = pd.read_csv(uploaded_csv)
+        if not {"item_nbr", "onpromotion"}.issubset(df.columns):
             st.error("CSV must contain columns: item_nbr, onpromotion")
             st.stop()
+        st.session_state["items_df"] = df.drop_duplicates("item_nbr")
 
-        csv_df = csv_df.drop_duplicates(subset=["item_nbr"])
+    items_df = st.session_state.get("items_df")
 
-        for _, r in csv_df.iterrows():
-            items.append(
-                {
-                    "item_nbr": int(r["item_nbr"]),
-                    "onpromotion": bool(r["onpromotion"]),
-                }
-            )
+    run_decision = st.button("Run forecast → orders", type="primary")
 
-    else:
-        store_day_df = df_features[
-            (df_features["date"].dt.date == date)
-            & (df_features["store_nbr"] == store_nbr)
-        ]
+# =====================================================
+# Show SKU payload
+# =====================================================
 
-        valid_items = sorted(store_day_df["item_nbr"].unique())
-        selected_items = st.multiselect(
-            "Items (SKUs)",
-            valid_items,
-            valid_items[:8],
-        )
-
-        for sku in selected_items:
-            promo = st.checkbox(
-                f"SKU {sku} on promotion",
-                key=f"promo_{sku}",
-            )
-            items.append(
-                {
-                    "item_nbr": int(sku),
-                    "onpromotion": bool(promo),
-                }
-            )
-
-    run_decision = st.button("Run Decision", type="primary")
+if items_df is None:
+    st.info("Upload a CSV or click **Load demo payload** to begin.")
+else:
+    st.subheader("SKU Payload")
+    st.dataframe(items_df, use_container_width=True)
 
 # =====================================================
 # Run Decision
 # =====================================================
 
 if run_decision:
-    if not items:
-        st.error("No SKUs selected.")
+
+    if items_df is None or items_df.empty:
+        st.error("No SKUs provided.")
         st.stop()
 
     payload = {
         "store_nbr": int(store_nbr),
-        "date": pd.to_datetime(date).isoformat(),
+        "date": date,
         "service_level": float(service_level),
         "capacity_units": int(capacity_units),
-        "fill_capacity": bool(fill_capacity),
-        "items": items,
+        "items": items_df.to_dict(orient="records"),
     }
 
-    with st.spinner("Calling Forecast-to-Orders API..."):
-        r = requests.post(API_URL, json=payload)
+    try:
+        with st.spinner("Calling forecasting API..."):
+            r = requests.post(
+                f"{API_BASE_URL}/forecast-to-orders",
+                json=payload,
+                timeout=10,
+            )
 
-    if r.status_code != 200:
-        st.error("API Error")
-        st.code(r.text)
+        if r.status_code != 200:
+            st.error("API returned an error")
+            st.code(r.text)
+            st.stop()
+
+        response = r.json()
+
+    except Exception as e:
+        st.error("Failed to call API")
+        st.exception(e)
         st.stop()
 
-    response = r.json()
     df = pd.DataFrame(response["results"])
-
     total_forecast = response["summary"]["total_forecast"]
     total_orders = response["summary"]["total_orders"]
 
-    st.session_state["df"] = df
-    st.session_state["total_forecast"] = total_forecast
-    st.session_state["total_orders"] = total_orders
-    st.session_state["capacity"] = capacity_units
-    st.session_state["payload"] = payload
+    st.session_state.update(
+        {
+            "df": df,
+            "total_forecast": total_forecast,
+            "total_orders": total_orders,
+            "capacity": capacity_units,
+            "payload": payload,
+        }
+    )
 
-    # ----------------------------
-    # Capacity stress test
-    # ----------------------------
+    # =====================================================
+    # Capacity Stress Test (safe demo loop)
+    # =====================================================
 
     cap_grid = np.linspace(
         int(0.3 * total_forecast),
         int(1.2 * total_forecast),
-        40,
+        30,
     ).astype(int)
 
     coverages = []
 
     for cap in cap_grid:
-        test_payload = payload.copy()
-        test_payload["capacity_units"] = int(cap)
-
-        rr = requests.post(API_URL, json=test_payload)
+        test_payload = payload | {"capacity_units": int(cap)}
+        rr = requests.post(
+            f"{API_BASE_URL}/forecast-to-orders",
+            json=test_payload,
+            timeout=10,
+        )
         tmp = pd.DataFrame(rr.json()["results"])
         coverages.append(tmp["order_qty"].sum() / total_forecast)
 
@@ -188,6 +200,7 @@ if run_decision:
 # =====================================================
 
 if "df" in st.session_state:
+
     df = st.session_state["df"]
     total_forecast = st.session_state["total_forecast"]
     total_orders = st.session_state["total_orders"]
@@ -218,7 +231,7 @@ if "df" in st.session_state:
     )
 
     st.download_button(
-        "⬇ Download Order Table (CSV)",
+        "⬇ Download order table (CSV)",
         df.to_csv(index=False).encode("utf-8"),
         "order_recommendations.csv",
         "text/csv",
@@ -231,7 +244,12 @@ if "df" in st.session_state:
     cap_grid = st.session_state["cap_grid"]
     coverages = st.session_state["coverages"]
 
-    target = st.slider("Target Demand Served (%)", 50, 100, 90) / 100
+    target = st.slider(
+        "Target demand served (%)",
+        50,
+        100,
+        90,
+    ) / 100
 
     fig = go.Figure()
 
@@ -263,7 +281,7 @@ if "df" in st.session_state:
     )
 
     fig.update_layout(
-        title="Capacity vs Demand Served (Stepwise)",
+        title="Capacity vs Demand Served",
         xaxis_title="Capacity (Units)",
         yaxis_title="Fraction of Demand Served",
         yaxis_tickformat=".0%",
@@ -272,10 +290,6 @@ if "df" in st.session_state:
     )
 
     st.plotly_chart(fig, use_container_width=True)
-
-    # =====================================================
-    # Guaranteed Capacity Metric
-    # =====================================================
 
     required_capacity = next(
         cap for cap, cov in zip(cap_grid, coverages) if cov >= target
@@ -288,5 +302,5 @@ if "df" in st.session_state:
 
     st.caption(
         "Coverage is stepwise due to integer SKU allocations. "
-        "The metric shows the smallest capacity that guarantees the target service."
+        "The metric shows the smallest capacity that guarantees the target service level."
     )
