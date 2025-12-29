@@ -10,6 +10,6 @@ __pycache__/
 # Data (non-versioned)
 data/raw/
 data/artifacts/
-
+data/snapshots/experimental/
 # Temporary / scratch
 requirements_raw.txt
