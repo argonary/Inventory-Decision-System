@@ -6,6 +6,13 @@ An end-to-end inventory ordering system built on the Corporacion Favorita grocer
 
 [![Watch the demo](https://img.youtube.com/vi/bV7PRJ9Or-E/0.jpg)](https://youtu.be/bV7PRJ9Or-E)
 
+## Business Motivation
+
+Grocery retailers face a daily tradeoff between stockouts and overstock. Ordering too little means lost sales and unsatisfied customers. Ordering too much means spoilage, markdowns, and tied-up working capital -- particularly costly for perishable categories.
+
+This system addresses that tradeoff directly. Rather than producing a single point forecast, it generates a quantile forecast at a chosen service level (P90 or P95), which explicitly encodes how much demand buffer the business wants to carry. The optimizer then translates those forecasts into integer order quantities that fit within the warehouse capacity available for that store on that day.
+
+The result is a decision-ready output: not just a prediction, but an actionable order recommendation that respects both the demand signal and the operational constraint.
 ## Architecture
 
 The Streamlit frontend sends a decision request (store, date, SKUs, capacity, service level) to the FastAPI backend. The backend slices a pre-built feature snapshot, runs LightGBM quantile inference, and passes the forecasts to the proportional allocation optimizer, which returns integer order quantities that respect the capacity cap.
@@ -65,3 +72,4 @@ Corporacion Favorita Grocery Sales Forecasting (Kaggle). The raw data is not inc
 - pandas, numpy, pyarrow -- data and feature engineering
 - Plotly -- capacity curve visualization
 - Git LFS -- model artifact storage
+
