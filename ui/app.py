@@ -3,6 +3,7 @@ import requests
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+from pathlib import Path
 
 # =====================================================
 # App Config
@@ -20,7 +21,7 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("📦 Inventory Ordering Decision Tool")
+st.title("Inventory Ordering Decision Tool")
 st.caption(
     "Quantile-based inventory decisions with hard capacity constraints "
     "(Streamlit client → FastAPI backend)"
@@ -94,7 +95,7 @@ with st.sidebar:
     )
 
     if st.button("Load demo payload"):
-        demo_df = pd.read_csv("ui/test_payload.csv")
+        demo_df = pd.read_csv(Path(__file__).parent / "test_payload.csv")
         st.session_state["items_df"] = demo_df
 
     if uploaded_csv:

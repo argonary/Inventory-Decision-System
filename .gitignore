@@ -13,3 +13,8 @@ data/artifacts/
 data/snapshots/experimental/
 # Temporary / scratch
 requirements_raw.txt
+
+data/snapshots/
+data/processed/
+.DS_Store
+scripts/deprecated/

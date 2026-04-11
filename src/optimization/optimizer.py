@@ -8,7 +8,7 @@ def optimize_proportional_allocation(
     service_floor_ratio: float = 0.0,
     perishable_flags: Optional[Dict[int, bool]] = None,
     perishable_weight: float = 1.0,
-    fill_capacity: bool = False,   # 👈 NEW
+    fill_capacity: bool = False,
 ) -> Dict[int, int]:
     """
     Proportionally allocate inventory with:
@@ -56,6 +56,9 @@ def optimize_proportional_allocation(
     total_floor = sum(raw_floors.values())
 
     if total_floor > effective_capacity:
+        # Floor guarantees degrade proportionally when capacity is too tight
+        # to honor all minimums. This is intentional: a scaled floor is
+        # better than an infeasible allocation.
         scale = effective_capacity / total_floor
         floors = {k: v * scale for k, v in raw_floors.items()}
     else:

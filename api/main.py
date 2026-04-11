@@ -27,7 +27,7 @@ app = FastAPI(
 # Load predictor (SAFE: never crashes on missing latest/)
 # =====================================================
 
-print("📦 Loading predictor...")
+print("Loading predictor...")
 predictor = build_default_predictor()
 
 # =====================================================
@@ -37,11 +37,11 @@ predictor = build_default_predictor()
 snapshot_name = FEATURED_SNAPSHOT_BY_MODE[ACTIVE_DATASET_MODE]
 FEATURED_SNAPSHOT_PATH = SNAPSHOTS_DIR / snapshot_name
 
-print(f"📦 Loading featured snapshot ({ACTIVE_DATASET_MODE})...")
+print(f"Loading featured snapshot ({ACTIVE_DATASET_MODE})...")
 df_features = pd.read_parquet(FEATURED_SNAPSHOT_PATH)
 df_features["date"] = pd.to_datetime(df_features["date"])
 
-print(f"✅ Loaded snapshot {snapshot_name} with shape {df_features.shape}")
+print(f"Loaded snapshot {snapshot_name} with shape {df_features.shape}")
 
 # =====================================================
 # Health & version endpoints
@@ -118,7 +118,8 @@ def forecast_to_orders(req: ForecastToOrdersRequest):
         .reset_index(drop=True)
     )
 
-    assert df_slice["item_nbr"].is_unique, "Duplicate SKUs in decision slice"
+    if not df_slice["item_nbr"].is_unique:
+    	raise HTTPException(status_code=500, detail="Duplicate SKUs in decision slice after dedup")
 
     # -----------------------------
     # Override onpromotion flags

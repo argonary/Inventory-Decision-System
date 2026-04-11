@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 
 # =====================================================
 # Project structure
@@ -25,8 +25,8 @@ ACTIVE_MODEL_VERSION = "v1"
 # =====================================================
 
 # Which featured snapshot the API should serve
-# "train" → training-era data (2013–2015)
-# "test"  → out-of-time demo data (2016Q1)
+# "train" -> training-era data (2013â€“2015)
+# "test"  -> out-of-time demo data (2016Q1)
 ACTIVE_DATASET_MODE = "test"  # <-- switch here for demos
 
 FEATURED_SNAPSHOT_BY_MODE = {

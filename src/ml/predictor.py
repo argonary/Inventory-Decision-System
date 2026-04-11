@@ -71,8 +71,13 @@ class QuantilePredictor:
         df = df_features.copy()
         df = self._apply_category_schemas(df)
 
+        missing = [f for f in FEATURES if f not in df.columns]
+        if missing:
+            raise ValueError(f"Missing features for prediction: {missing}")
         X = df[FEATURES]
         model = self._get_model(service_level)
+
+        # Model was trained on log1p-transformed targets; invert with expm1
 
         y_hat_log = model.predict(X)
         y_hat = np.expm1(y_hat_log)
