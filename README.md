@@ -1,185 +1,67 @@
-# Inventory Decision System
-*Turning demand uncertainty into capacity-constrained order recommendations*
+﻿# Inventory Decision System
 
-## Overview
+An end-to-end inventory ordering system built on the Corporacion Favorita grocery dataset. It uses LightGBM quantile regression to forecast demand at a chosen service level, then allocates order quantities across SKUs subject to a hard warehouse capacity constraint.
 
-This project demonstrates how demand uncertainty can be translated into concrete, operational inventory decisions.
+## Demo
 
-Instead of planning inventory using a single average forecast, the system plans
-against high-demand scenarios and explicitly accounts for capacity constraints.
-This reflects how real supply chains operate and allows decision-makers to choose
-their risk posture intentionally.
+[![Watch the demo](https://img.youtube.com/vi/bV7PRJ9Or-E/0.jpg)](https://youtu.be/bV7PRJ9Or-E)
 
-The system is built on the Corporación Favorita grocery sales dataset and uses
-quantile forecasting with LightGBM to produce feasible, capacity-aware order
-quantities.
+## Architecture
 
-## Business Motivation
+The Streamlit frontend sends a decision request (store, date, SKUs, capacity, service level) to the FastAPI backend. The backend slices a pre-built feature snapshot, runs LightGBM quantile inference, and passes the forecasts to the proportional allocation optimizer, which returns integer order quantities that respect the capacity cap.
 
-Inventory planning always involves tradeoffs.
+## Methodology
 
-  - Ordering too little leads to stockouts, lost sales, and poor customer experience.
-  - Ordering too much increases holding costs, waste, and working capital requirements.
+**Forecasting:** Two LightGBM models are trained on quantile loss, one at P90 and one at P95. Features include lag sales, rolling averages, calendar signals, oil price, holiday flags, store metadata, and promotion status. Targets are log1p-transformed at training time and inverted at inference.
 
-In practice, capacity is limited. Warehouses, suppliers, and transportation networks
-cannot fulfill unlimited demand. Planning purely off average demand ignores both
-uncertainty and these real operational limits.
+**Optimization:** Given quantile forecasts across N SKUs and a capacity cap C, the optimizer runs proportional allocation with largest-remainder rounding to produce integer order quantities. Capacity is treated as a maximum, not a target. If total forecast is below capacity, orders match forecast exactly. An optional service floor ratio guarantees a minimum allocation fraction per SKU.
 
-This project shows how to:
-  - Model demand uncertainty directly
-  - Choose a clear and explicit risk posture
-  - Convert forecasts into realistic order decisions
+**Out-of-time evaluation:** The API serves a 2016Q1 feature snapshot, which is outside the 2013-2015 training window, giving a realistic demonstration of model generalization.
 
-## What the System Does
+## Quickstart
 
-At a high level, the system:
+Requirements: Python 3.11, Git LFS
 
-  - Forecasts daily demand for store-item combinations
-  - Produces multiple demand scenarios using quantile models
-  - Allocates limited capacity across SKUs
-  - Generates order quantities that respect both demand and capacity
+Clone the repo and install dependencies:
 
-The output is an order plan that balances service level objectives with operational
-feasibility.
+    git clone https://github.com/argonary/Inventory-Decision-System.git
+    cd Inventory-Decision-System
+    python -m venv .venv
+    .venv\Scripts\Activate.ps1
+    pip install -r requirements.txt
 
-## Key Concept: Quantile Forecasting (Plain English)
+Download the Corporacion Favorita dataset from Kaggle and place the CSVs in data/raw/, then build the featured snapshots:
 
-Traditional forecasting methods predict a single number, often interpreted as the
-average expected demand.
+    python scripts/build_training_snapshot.py
+    python scripts/build_featured_snapshot.py
+    python scripts/build_test_snapshot_2016Q1.py
+    python scripts/build_test_featured_snapshot_2016Q1.py
 
-Quantile forecasting predicts several demand scenarios instead.
+Launch the full application:
 
-For example:
-  - Lower quantiles represent low-demand days
-  - Middle quantiles represent typical demand
-  - Higher quantiles represent high-demand days
+    .\run_app.ps1
 
-Planning with a higher quantile means planning for a busier-than-average scenario.
+This opens the FastAPI backend and Streamlit frontend in separate terminals. The browser will open automatically at http://localhost:8501.
 
-In practical terms:
-  - Higher quantiles reduce the risk of stockouts
-  - They require carrying more inventory
-  - The tradeoff between risk and cost becomes explicit
+## API
 
-This makes the inventory decision a business choice rather than a hidden modeling
-assumption.
+The FastAPI backend exposes three endpoints:
 
-## How Decisions Are Produced
+- GET /health -- liveness check
+- GET /version -- active model version and snapshot
+- POST /forecast-to-orders -- main inference endpoint
 
-The system follows a deterministic and transparent flow:
+Interactive API docs are available at http://localhost:8000/docs when the server is running.
 
-  1. Historical sales data is transformed into feature snapshots
-  2. A LightGBM quantile model generates demand estimates
-  3. A capacity allocation step distributes limited capacity across items
-  4. Order quantities are capped so they never exceed forecasted demand
-  5. Results are returned in a structured format for downstream use
+## Dataset
 
-Every step respects the chosen demand scenario and capacity constraint.
+Corporacion Favorita Grocery Sales Forecasting (Kaggle). The raw data is not included in this repo. Download it from Kaggle and place the CSVs in data/raw/.
 
-## Overall Architecture
+## Tech Stack
 
-  Streamlit UI (client)
-    → FastAPI service
-      → Quantile demand model
-        → Capacity allocation logic
-          → Order recommendations
-
-The Streamlit application is a pure client. It sends requests to the API, displays
-forecasts and order quantities, and visualizes the tradeoffs between capacity and
-demand served.
-
-## How to Run Locally
-
-The system is split into two components:
-  - A FastAPI backend that performs forecasting and order allocation
-  - A Streamlit frontend that acts as a client and visualization layer
-
-### Run the API (Docker)
-
-  Build the Docker image:
-
-      docker build -t favorita-api .
-
-  Run the container:
-
-      docker run -p 8000:8000 favorita-api
-
-  Verify the service is running:
-
-      http://127.0.0.1:8000/health
-
-### Run the Streamlit UI
-
-  In a separate terminal, run:
-
-      streamlit run ui/app.py
-
-  The UI will connect to the local API and display forecasts, order quantities,
-  and capacity sensitivity curves.
-
-## API Endpoints
-
-The FastAPI service exposes the following endpoints:
-
-    - POST /forecast-to-orders
-      Accepts a payload describing SKUs, capacity, and planning scenario.
-      Returns demand forecasts and recommended order quantities.
-
-    - GET /health
-      Simple health check endpoint.
-
-    - GET /version
-      Returns the current model and snapshot version.
-
-## Repository Structure
-
-    api/
-        FastAPI service, request schemas, and inference logic
-
-    ui/
-        Streamlit application acting as a pure API client
-
-    scripts/
-        Snapshot building, feature engineering, and utility scripts
-
-    data/
-        snapshots/   Feature snapshots used for inference
-        models/      Trained model artifacts (tracked with Git LFS)
-
-## Data and Artifacts
-
-This repository uses Git LFS to manage large artifacts such as:
-
-    - Feature snapshots
-    - Trained model files
-
-Raw Corporación Favorita CSV files are intentionally excluded and remain local.
-This keeps the repository lightweight while preserving reproducibility through
-curated snapshots included in the repo.
-
-## Limitations and Scope
-
-This project is a demonstration system.
-
-  - The UI operates on a curated snapshot for responsiveness
-  - The dataset is historical and finite
-  - Models are not retrained automatically
-
-In a production setting, forecasts would be refreshed regularly, new data would
-be ingested continuously, and capacity constraints could vary over time.
-
-## Business Impact
-
-This approach enables better operational decisions by:
-
-  - Reducing stockout risk through explicit planning for high-demand scenarios
-  - Preventing over-ordering beyond realistic demand
-  - Making capacity constraints visible and actionable
-  - Allowing stakeholders to reason clearly about risk versus cost
-
-While this project is illustrative, the same framework can be extended to real
-supply chain environments with minimal conceptual changes.
-
-## Author
-
-Aryan Pai
+- LightGBM 4.6 -- quantile regression
+- FastAPI 0.126 -- REST backend
+- Streamlit 1.52 -- interactive frontend
+- pandas, numpy, pyarrow -- data and feature engineering
+- Plotly -- capacity curve visualization
+- Git LFS -- model artifact storage
