@@ -25,6 +25,19 @@ The Streamlit frontend sends a decision request (store, date, SKUs, capacity, se
 
 **Out-of-time evaluation:** The API serves a 2016Q1 feature snapshot, which is outside the 2013-2015 training window, giving a realistic demonstration of model generalization.
 
+## Data Preparation
+
+The raw Favorita dataset contains sales records for 54 stores and over 4,000 SKUs across several years. Rather than training on the full universe, the data pipeline applies two deliberate sampling decisions to keep the dataset tractable while preserving signal from the highest-volume combinations.
+
+**Store selection:** The top 25 stores by total unit sales volume are retained. This covers the bulk of revenue while avoiding noise from low-traffic locations.
+
+**Item selection:** Items are kept if they have more than 500 observations in the training period and rank in the top 800 by total sales. This ensures every SKU in the model has sufficient history for lag feature construction.
+
+**Training window:** Data from January 2013 through December 2015 is used for training. Lag features are computed at 7, 14, and 28 days. Rows where any lag is missing are dropped, which removes the earliest dates for each store-item pair.
+
+**Out-of-time test window:** A separate 2016Q1 snapshot is built using the same store and item filters. The deployment test set starts in February 2016 rather than January to ensure all 28-day lag features are fully populated from January history. This snapshot is what the live API serves, giving a realistic demonstration of model generalization on data outside the training window.
+
+The full data preparation process is documented in notebooks/data_preparation.ipynb.
 ## Quickstart
 
 Requirements: Python 3.11, Git LFS
@@ -72,4 +85,5 @@ Corporacion Favorita Grocery Sales Forecasting (Kaggle). The raw data is not inc
 - pandas, numpy, pyarrow -- data and feature engineering
 - Plotly -- capacity curve visualization
 - Git LFS -- model artifact storage
+
 
