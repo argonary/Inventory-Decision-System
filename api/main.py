@@ -5,7 +5,7 @@ import numpy as np
 
 from src.config import (
     SNAPSHOTS_DIR,
-    ACTIVE_MODEL_VERSION,
+    MODEL_VERSION_LABEL,
     ACTIVE_DATASET_MODE,
     FEATURED_SNAPSHOT_BY_MODE,
 )
@@ -55,7 +55,7 @@ def health():
 @app.get("/version")
 def version():
     return {
-        "model_version": ACTIVE_MODEL_VERSION,
+        "model_version": MODEL_VERSION_LABEL,
         "dataset_mode": ACTIVE_DATASET_MODE,
         "snapshot": FEATURED_SNAPSHOT_PATH.name,
     }
@@ -119,7 +119,7 @@ def forecast_to_orders(req: ForecastToOrdersRequest):
     )
 
     if not df_slice["item_nbr"].is_unique:
-    	raise HTTPException(status_code=500, detail="Duplicate SKUs in decision slice after dedup")
+        raise HTTPException(status_code=500, detail="Duplicate SKUs in decision slice after dedup")
 
     # -----------------------------
     # Override onpromotion flags
@@ -185,7 +185,7 @@ def forecast_to_orders(req: ForecastToOrdersRequest):
         "service_level": service_level,
         "capacity_units": capacity,
         "fill_capacity": False,
-        "model_version": ACTIVE_MODEL_VERSION,
+        "model_version": MODEL_VERSION_LABEL,
         "dataset_mode": ACTIVE_DATASET_MODE,
         "snapshot": FEATURED_SNAPSHOT_PATH.name,
         "summary": {

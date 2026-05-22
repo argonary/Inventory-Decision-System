@@ -1,11 +1,10 @@
 import pandas as pd
-from pathlib import Path
 
 from src.config import RAW_DIR, SNAPSHOTS_DIR
 from src.data.sampling import select_store_item_universe
 from src.data.snapshot_builder import build_base_snapshot
 
-START_DATE = "2016-01-01"
+START_DATE = "2016-01-04"
 END_DATE = "2016-04-30"
 
 OUTPUT_NAME = "favorita_test_snapshot_2016Q1.parquet"

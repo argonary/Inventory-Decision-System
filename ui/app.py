@@ -293,15 +293,21 @@ if "df" in st.session_state:
     st.plotly_chart(fig, use_container_width=True)
 
     required_capacity = next(
-        cap for cap, cov in zip(cap_grid, coverages) if cov >= target
+        (cap for cap, cov in zip(cap_grid, coverages) if cov >= target),
+        None,
     )
 
-    st.metric(
-        "Minimum Capacity Required (Guaranteed)",
-        f"{required_capacity} units",
-    )
+    if required_capacity is None:
+        st.warning(
+            "Target coverage not achievable within the capacity range shown."
+        )
+    else:
+        st.metric(
+            "Minimum Capacity Required (Guaranteed)",
+            f"{required_capacity} units",
+        )
 
-    st.caption(
-        "Coverage is stepwise due to integer SKU allocations. "
-        "The metric shows the smallest capacity that guarantees the target service level."
-    )
+        st.caption(
+            "Coverage is stepwise due to integer SKU allocations. "
+            "The metric shows the smallest capacity that guarantees the target service level."
+        )

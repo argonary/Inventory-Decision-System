@@ -3,10 +3,10 @@ import numpy as np
 
 from src.config import (
     SNAPSHOTS_DIR,
-    ACTIVE_MODEL_VERSION,
+    MODEL_VERSION_LABEL,
 )
 from src.ml.predictor_factory import build_predictor
-from src.optimization.optimizer import optimize_orders
+from src.optimization.optimizer import optimize_proportional_allocation
 
 
 def main():
@@ -24,7 +24,7 @@ def main():
     snapshot_path = SNAPSHOTS_DIR / "favorita_train_featured_2015.parquet"
 
     print(f"Snapshot: {snapshot_path}")
-    print(f"Model version: {ACTIVE_MODEL_VERSION}")
+    print(f"Model version: {MODEL_VERSION_LABEL}")
     print(f"Capacity: {CAPACITY}")
 
     # -------------------------
@@ -58,7 +58,7 @@ def main():
     # -------------------------
     # Build predictor
     # -------------------------
-    predictor = build_predictor(version=ACTIVE_MODEL_VERSION)
+    predictor = build_predictor(version=MODEL_VERSION_LABEL)
 
     # -------------------------
     # Forecasts + Optimization
@@ -78,14 +78,18 @@ def main():
 
         print(f"⚙️ Optimizing orders for P{int(alpha * 100)}...")
 
-        orders[alpha] = optimize_orders(
-            demand=preds,
-            capacity=CAPACITY,
-            service_level=alpha,
-            perishable_flags=df_slice["perishable"].values,
-            perishable_weight=PERISHABLE_WEIGHT,
-            floor_ratio=FLOOR_RATIO,
+        demand_dict = dict(zip(df_slice["item_nbr"], preds))
+        perishable_dict = dict(
+            zip(df_slice["item_nbr"], df_slice["perishable"].astype(bool))
         )
+        result_dict = optimize_proportional_allocation(
+            demand=demand_dict,
+            capacity=CAPACITY,
+            service_floor_ratio=FLOOR_RATIO,
+            perishable_flags=perishable_dict,
+            perishable_weight=PERISHABLE_WEIGHT,
+        )
+        orders[alpha] = np.array([result_dict[k] for k in df_slice["item_nbr"]])
 
     # -------------------------
     # Assemble comparison table

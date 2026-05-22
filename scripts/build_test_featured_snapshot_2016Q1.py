@@ -1,5 +1,4 @@
 import pandas as pd
-from pathlib import Path
 
 from src.config import SNAPSHOTS_DIR, RAW_DIR
 from src.features.calendar import add_calendar_features
@@ -7,7 +6,10 @@ from src.features.holidays import add_holiday_feature
 from src.features.oil import add_oil_feature
 from src.features.promotion import add_promotion_feature
 from src.features.lags import add_lag_features
-from src.validation.feature_validation import validate_featured_snapshot
+from src.validation.feature_validation import (
+    validate_base_snapshot,
+    validate_featured_snapshot,
+)
 
 
 INPUT_SNAPSHOT = "favorita_test_snapshot_2016Q1.parquet"
@@ -29,6 +31,8 @@ def main():
     print("📥 Loading base test snapshot")
     df = pd.read_parquet(in_path)
     print(f"Base snapshot shape: {df.shape}")
+
+    validate_base_snapshot(df)
 
     # --------------------------------------------------
     # Load auxiliary tables
@@ -61,6 +65,14 @@ def main():
     # --------------------------------------------------
     print("🔎 Validating featured snapshot")
     validate_featured_snapshot(df)
+
+    # --------------------------------------------------
+    # Trim pre-history rows used only for lag computation
+    # (Jan 4–31 loaded to populate 28-day lags for Feb 1+;
+    #  artifact must only expose Feb–Apr.)
+    # --------------------------------------------------
+    df = df[df["date"] >= "2016-02-01"].reset_index(drop=True)
+    print(f"Trimmed to Feb–Apr rows: {df.shape}")
 
     # --------------------------------------------------
     # Write output

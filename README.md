@@ -1,4 +1,4 @@
-﻿# Inventory Decision System
+# Inventory Decision System
 
 An end-to-end inventory ordering system built on the Corporacion Favorita grocery dataset. It uses LightGBM quantile regression to forecast demand at a chosen service level, then allocates order quantities across SKUs subject to a hard warehouse capacity constraint.
 
@@ -13,6 +13,7 @@ Grocery retailers face a daily tradeoff between stockouts and overstock. Orderin
 This system addresses that tradeoff directly. Rather than producing a single point forecast, it generates a quantile forecast at a chosen service level (P90 or P95), which explicitly encodes how much demand buffer the business wants to carry. The optimizer then translates those forecasts into integer order quantities that fit within the warehouse capacity available for that store on that day.
 
 The result is a decision-ready output: not just a prediction, but an actionable order recommendation that respects both the demand signal and the operational constraint.
+
 ## Architecture
 
 The Streamlit frontend sends a decision request (store, date, SKUs, capacity, service level) to the FastAPI backend. The backend slices a pre-built feature snapshot, runs LightGBM quantile inference, and passes the forecasts to the proportional allocation optimizer, which returns integer order quantities that respect the capacity cap.
@@ -38,30 +39,41 @@ The raw Favorita dataset contains sales records for 54 stores and over 4,000 SKU
 **Out-of-time test window:** A separate 2016Q1 snapshot is built using the same store and item filters. The deployment test set starts in February 2016 rather than January to ensure all 28-day lag features are fully populated from January history. This snapshot is what the live API serves, giving a realistic demonstration of model generalization on data outside the training window.
 
 The full data preparation process is documented in notebooks/data_preparation.ipynb.
+
 ## Quickstart
 
 Requirements: Python 3.11, Git LFS
 
-Clone the repo and install dependencies:
+The processed feature snapshots and trained models are stored in Git LFS and are included in the repo. No raw data download is required to run the demo.
 
+**Run the demo:**
+
+Install Git LFS (once per machine), then clone and install dependencies:
+
+    git lfs install
     git clone https://github.com/argonary/Inventory-Decision-System.git
     cd Inventory-Decision-System
     python -m venv .venv
     .venv\Scripts\Activate.ps1
     pip install -r requirements.txt
 
-Download the Corporacion Favorita dataset from Kaggle and place the CSVs in data/raw/, then build the featured snapshots:
-
-    python scripts/build_training_snapshot.py
-    python scripts/build_featured_snapshot.py
-    python scripts/build_test_snapshot_2016Q1.py
-    python scripts/build_test_featured_snapshot_2016Q1.py
-
-Launch the full application:
+Launch the application:
 
     .\run_app.ps1
 
 This opens the FastAPI backend and Streamlit frontend in separate terminals. The browser will open automatically at http://localhost:8501.
+
+**Rebuild the pipeline from raw data (optional):**
+
+If you want to reconstruct the snapshots or retrain the models from scratch, download the Corporacion Favorita dataset from Kaggle and place the CSVs in `data/raw/`, then run:
+
+    .\rebuild_pipeline.ps1
+
+This runs all five steps in order -- snapshot builds followed by model training -- and activates the new version automatically. To pin a specific version name:
+
+    .\rebuild_pipeline.ps1 -Version v2
+
+The script exits immediately with a clear error message if any step fails or if required raw data files are missing from `data/raw/`.
 
 ## API
 
@@ -75,7 +87,7 @@ Interactive API docs are available at http://localhost:8000/docs when the server
 
 ## Dataset
 
-Corporacion Favorita Grocery Sales Forecasting (Kaggle). The raw data is not included in this repo. Download it from Kaggle and place the CSVs in data/raw/.
+Corporacion Favorita Grocery Sales Forecasting (Kaggle). The raw CSVs (~4.9 GB) are not included in the repo. The processed feature snapshots (~253 MB) and trained model artifacts (~4 MB) are stored in Git LFS and are pulled automatically on clone. Download the raw data only if you want to rebuild the pipeline from scratch.
 
 ## Tech Stack
 
@@ -84,6 +96,4 @@ Corporacion Favorita Grocery Sales Forecasting (Kaggle). The raw data is not inc
 - Streamlit 1.52 -- interactive frontend
 - pandas, numpy, pyarrow -- data and feature engineering
 - Plotly -- capacity curve visualization
-- Git LFS -- model artifact storage
-
-
+- Git LFS -- snapshot and model artifact storage

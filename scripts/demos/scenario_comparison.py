@@ -75,7 +75,7 @@ def main():
 
     # Load data
     df = pd.read_parquet(
-        SNAPSHOTS_DIR / "favorita_train_model_table_2016Q1.parquet"
+        SNAPSHOTS_DIR / "favorita_test_featured_2016Q1.parquet"
     )
 
     # Fix decision context

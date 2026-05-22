@@ -2,7 +2,7 @@ import pandas as pd
 
 from src.config import RAW_DIR, SNAPSHOTS_DIR
 from src.data.snapshot_builder import build_base_snapshot
-from src.data.sampling import select_store_item_universe
+from src.data.sampling import select_store_item_universe, apply_universe_filter
 
 
 # -----------------------------------------
@@ -55,10 +55,7 @@ def main():
         f"and {len(items_u)} items"
     )
 
-    train = train[
-        train["store_nbr"].isin(stores_u)
-        & train["item_nbr"].isin(items_u)
-    ]
+    train = apply_universe_filter(train, stores_u, items_u)
 
     print(f"After universe filter: {train.shape}")
 

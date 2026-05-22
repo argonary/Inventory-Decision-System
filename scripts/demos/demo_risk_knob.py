@@ -7,7 +7,7 @@ def main():
     predictor = build_default_predictor()
 
     df = pd.read_parquet(
-        SNAPSHOTS_DIR / "favorita_train_model_table_2016Q1.parquet"
+        SNAPSHOTS_DIR / "favorita_test_featured_2016Q1.parquet"
     ).sample(5000, random_state=42)
 
     p90 = predictor.predict_df(df, service_level=0.90)

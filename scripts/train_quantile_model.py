@@ -1,5 +1,6 @@
 import argparse
 import json
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -30,7 +31,7 @@ def parse_args():
         "--quantiles",
         nargs="+",
         type=float,
-        default=[0.90],
+        default=[0.90, 0.95],
         help="Quantiles to train (e.g. 0.9 0.95)",
     )
 
@@ -39,6 +40,12 @@ def parse_args():
         type=str,
         required=True,
         help="Model version name (e.g. v1, v2_2025_12_20)",
+    )
+
+    parser.add_argument(
+        "--update-latest",
+        action="store_true",
+        help="After training, overwrite data/models/latest/ with this version's artifacts.",
     )
 
     return parser.parse_args()
@@ -50,7 +57,7 @@ def main():
     version = args.version
 
     model_dir = MODELS_DIR / version
-    model_dir.mkdir(parents=True, exist_ok=False)
+    model_dir.mkdir(parents=True, exist_ok=True)
 
     print("📥 Loading featured training snapshot...")
     df = pd.read_parquet(
@@ -123,6 +130,14 @@ def main():
         json.dump(metadata, f, indent=2)
 
     print(f"✅ Metadata written to {model_dir / 'metadata.json'}")
+
+    if args.update_latest:
+        latest_dir = MODELS_DIR / "latest"
+        if latest_dir.exists():
+            shutil.rmtree(latest_dir)
+        shutil.copytree(model_dir, latest_dir)
+        print(f"✅ data/models/latest/ updated → {version}")
+
     print("🎉 Training complete")
 
 

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.config import SNAPSHOTS_DIR, MODELS_DIR, ACTIVE_MODEL_VERSION
+from src.config import SNAPSHOTS_DIR, MODELS_DIR, MODEL_VERSION_LABEL
 from src.ml.predictor_factory import build_predictor
 
 
@@ -8,7 +8,7 @@ def main():
     print("🚀 Starting inference sanity check...")
 
     snapshot_path = SNAPSHOTS_DIR / "favorita_train_featured_2015.parquet"
-    model_dir = MODELS_DIR / ACTIVE_MODEL_VERSION
+    model_dir = MODELS_DIR / MODEL_VERSION_LABEL
 
     print(f"Snapshot path: {snapshot_path}")
     print(f"Model dir:     {model_dir}")
@@ -30,7 +30,7 @@ def main():
 
     # ---- Load predictor (VERSIONED) ----
     print("Initializing QuantilePredictor...")
-    predictor = build_predictor(version=ACTIVE_MODEL_VERSION)
+    predictor = build_predictor(version=MODEL_VERSION_LABEL)
 
     # ---- Run inference ----
     print("Running predictions (P90)...")

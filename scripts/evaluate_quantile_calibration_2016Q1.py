@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from pathlib import Path
 
 from src.config import SNAPSHOTS_DIR
 from src.ml.predictor_factory import build_predictor
