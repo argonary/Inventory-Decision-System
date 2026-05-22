@@ -1,3 +1,5 @@
+import logging
+
 import pandas as pd
 
 from src.config import RAW_DIR, SNAPSHOTS_DIR
@@ -6,10 +8,14 @@ from src.features.holidays import add_holiday_feature
 from src.features.oil import add_oil_feature
 from src.features.promotion import add_promotion_feature
 from src.features.lags import add_lag_features
+from src.logging_config import configure_logging
 from src.validation.feature_validation import (
     validate_base_snapshot,
     validate_featured_snapshot,
 )
+
+configure_logging()
+logger = logging.getLogger(__name__)
 
 # -----------------------------------------
 # Feature configuration
@@ -37,16 +43,16 @@ def build_featured_snapshot(
     # -----------------------------
     # Feature engineering
     # -----------------------------
-    print("➕ Adding calendar features")
+    logger.info("➕ Adding calendar features")
     df = add_calendar_features(df)
 
-    print("➕ Adding holiday feature")
+    logger.info("➕ Adding holiday feature")
     df = add_holiday_feature(df, holidays)
 
-    print("➕ Adding oil feature")
+    logger.info("➕ Adding oil feature")
     df = add_oil_feature(df, oil)
 
-    print("➕ Adding promotion feature")
+    logger.info("➕ Adding promotion feature")
     df = add_promotion_feature(df)
 
     # Ensure deterministic order before time-series ops
@@ -54,7 +60,7 @@ def build_featured_snapshot(
         ["store_nbr", "item_nbr", "date"]
     ).reset_index(drop=True)
 
-    print("➕ Adding lag & rolling features")
+    logger.info("➕ Adding lag & rolling features")
     df = add_lag_features(
         df,
         lags=LAGS,
@@ -70,7 +76,7 @@ def build_featured_snapshot(
 
 
 def main():
-    print("🚀 Building featured training snapshot")
+    logger.info("🚀 Building featured training snapshot")
 
     # -----------------------------------------
     # Load base snapshot
@@ -78,7 +84,7 @@ def main():
     base_path = SNAPSHOTS_DIR / "favorita_train_snapshot_2015.parquet"
     df_base = pd.read_parquet(base_path)
 
-    print(f"Loaded base snapshot: {df_base.shape}")
+    logger.info(f"Loaded base snapshot: {df_base.shape}")
 
     # -----------------------------------------
     # Load external tables
@@ -110,8 +116,8 @@ def main():
     out_path = SNAPSHOTS_DIR / "favorita_train_featured_2015.parquet"
     df_featured.to_parquet(out_path, index=False)
 
-    print(f"✅ Featured snapshot written to {out_path}")
-    print(f"Final shape: {df_featured.shape}")
+    logger.info(f"✅ Featured snapshot written to {out_path}")
+    logger.info(f"Final shape: {df_featured.shape}")
 
 
 if __name__ == "__main__":

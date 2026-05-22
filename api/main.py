@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI, HTTPException
 from typing import List
 import pandas as pd
@@ -9,9 +11,13 @@ from src.config import (
     ACTIVE_DATASET_MODE,
     FEATURED_SNAPSHOT_BY_MODE,
 )
+from src.logging_config import configure_logging
 from src.ml.predictor_factory import build_default_predictor
 from src.optimization.optimizer import optimize_proportional_allocation
 from api.schemas import ForecastToOrdersRequest, ForecastToOrdersResponse
+
+configure_logging()
+logger = logging.getLogger(__name__)
 
 # =====================================================
 # App metadata
@@ -27,7 +33,7 @@ app = FastAPI(
 # Load predictor (SAFE: never crashes on missing latest/)
 # =====================================================
 
-print("Loading predictor...")
+logger.info("Loading predictor...")
 predictor = build_default_predictor()
 
 # =====================================================
@@ -37,11 +43,11 @@ predictor = build_default_predictor()
 snapshot_name = FEATURED_SNAPSHOT_BY_MODE[ACTIVE_DATASET_MODE]
 FEATURED_SNAPSHOT_PATH = SNAPSHOTS_DIR / snapshot_name
 
-print(f"Loading featured snapshot ({ACTIVE_DATASET_MODE})...")
+logger.info(f"Loading featured snapshot ({ACTIVE_DATASET_MODE})...")
 df_features = pd.read_parquet(FEATURED_SNAPSHOT_PATH)
 df_features["date"] = pd.to_datetime(df_features["date"])
 
-print(f"Loaded snapshot {snapshot_name} with shape {df_features.shape}")
+logger.info(f"Loaded snapshot {snapshot_name} with shape {df_features.shape}")
 
 # =====================================================
 # Health & version endpoints

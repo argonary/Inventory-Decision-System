@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -7,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.config import SNAPSHOTS_DIR, MODELS_DIR
+from src.logging_config import configure_logging
 from src.ml.feature_config import (
     FEATURES,
     TARGET_COL,
@@ -20,6 +22,9 @@ from src.ml.splits import (
 )
 from src.ml.trainer import train_lgbm_quantile
 from src.features.categorical import extract_category_schemas, save_category_schemas
+
+configure_logging()
+logger = logging.getLogger(__name__)
 
 
 def parse_args():
@@ -59,14 +64,14 @@ def main():
     model_dir = MODELS_DIR / version
     model_dir.mkdir(parents=True, exist_ok=True)
 
-    print("📥 Loading featured training snapshot...")
+    logger.info("📥 Loading featured training snapshot...")
     df = pd.read_parquet(
         SNAPSHOTS_DIR / "favorita_train_featured_2015.parquet"
     )
 
     df["date"] = pd.to_datetime(df["date"]).dt.date
 
-    print("✂️ Applying deterministic time split...")
+    logger.info("✂️ Applying deterministic time split...")
     train_df = df[
         (df["date"] >= TRAIN_START) &
         (df["date"] <= TRAIN_END)
@@ -77,7 +82,7 @@ def main():
         (df["date"] <= VALID_END)
     ].copy()
 
-    print(
+    logger.info(
         f"Train rows: {len(train_df):,} | "
         f"Valid rows: {len(valid_df):,}"
     )
@@ -85,7 +90,7 @@ def main():
     if train_df.empty or valid_df.empty:
         raise RuntimeError("Train/validation split produced empty dataset.")
 
-    print("📦 Extracting and saving category schemas (TRAIN ONLY)...")
+    logger.info("📦 Extracting and saving category schemas (TRAIN ONLY)...")
     schemas = extract_category_schemas(
         train_df,
         categorical_features=CATEGORICAL_FEATURES,
@@ -94,7 +99,7 @@ def main():
     schema_path = model_dir / "category_schemas.json"
     save_category_schemas(schemas, schema_path)
 
-    print(f"✅ Category schemas saved to {schema_path}")
+    logger.info(f"✅ Category schemas saved to {schema_path}")
 
     for q in quantiles:
         if not (0 < q < 1):
@@ -103,7 +108,7 @@ def main():
         q_label = int(q * 100)
         model_path = model_dir / f"favorita_lgbm_p{q_label}.txt"
 
-        print(f"🚀 Training P{q_label} quantile model...")
+        logger.info(f"🚀 Training P{q_label} quantile model...")
 
         train_lgbm_quantile(
             df=train_df,
@@ -114,9 +119,9 @@ def main():
             model_path=model_path,
         )
 
-        print(f"✅ Saved model to {model_path}")
+        logger.info(f"✅ Saved model to {model_path}")
 
-    print("📝 Writing metadata...")
+    logger.info("📝 Writing metadata...")
     metadata = {
         "version": version,
         "trained_at": datetime.utcnow().isoformat() + "Z",
@@ -129,16 +134,16 @@ def main():
     with open(model_dir / "metadata.json", "w") as f:
         json.dump(metadata, f, indent=2)
 
-    print(f"✅ Metadata written to {model_dir / 'metadata.json'}")
+    logger.info(f"✅ Metadata written to {model_dir / 'metadata.json'}")
 
     if args.update_latest:
         latest_dir = MODELS_DIR / "latest"
         if latest_dir.exists():
             shutil.rmtree(latest_dir)
         shutil.copytree(model_dir, latest_dir)
-        print(f"✅ data/models/latest/ updated → {version}")
+        logger.info(f"✅ data/models/latest/ updated → {version}")
 
-    print("🎉 Training complete")
+    logger.info("🎉 Training complete")
 
 
 if __name__ == "__main__":

@@ -1,8 +1,14 @@
+import logging
+
 import pandas as pd
 
 from src.config import RAW_DIR, SNAPSHOTS_DIR
 from src.data.snapshot_builder import build_base_snapshot
 from src.data.sampling import select_store_item_universe, apply_universe_filter
+from src.logging_config import configure_logging
+
+configure_logging()
+logger = logging.getLogger(__name__)
 
 
 # -----------------------------------------
@@ -17,12 +23,12 @@ TOP_N_ITEMS = 800
 
 
 def main():
-    print("🚀 Building training snapshot with universe selection")
+    logger.info("🚀 Building training snapshot with universe selection")
 
     # -----------------------------------------
     # Load raw training data (minimal columns)
     # -----------------------------------------
-    print("📥 Loading raw train.csv")
+    logger.info("📥 Loading raw train.csv")
     train = pd.read_csv(
         RAW_DIR / "train.csv",
         usecols=[
@@ -36,12 +42,12 @@ def main():
         low_memory=False,
     )
 
-    print(f"Raw train shape: {train.shape}")
+    logger.info(f"Raw train shape: {train.shape}")
 
     # -----------------------------------------
     # Universe selection (CRITICAL STEP)
     # -----------------------------------------
-    print("🔎 Selecting store/item universe")
+    logger.info("🔎 Selecting store/item universe")
 
     stores_u, items_u = select_store_item_universe(
         train=train,
@@ -50,26 +56,26 @@ def main():
         top_n_items=TOP_N_ITEMS,
     )
 
-    print(
+    logger.info(
         f"Selected {len(stores_u)} stores "
         f"and {len(items_u)} items"
     )
 
     train = apply_universe_filter(train, stores_u, items_u)
 
-    print(f"After universe filter: {train.shape}")
+    logger.info(f"After universe filter: {train.shape}")
 
     # -----------------------------------------
     # Load dimension tables
     # -----------------------------------------
-    print("📦 Loading dimension tables")
+    logger.info("📦 Loading dimension tables")
     items = pd.read_csv(RAW_DIR / "items.csv")
     stores = pd.read_csv(RAW_DIR / "stores.csv")
 
     # -----------------------------------------
     # Build base snapshot (date filtering + joins)
     # -----------------------------------------
-    print("🏗️ Building base training snapshot")
+    logger.info("🏗️ Building base training snapshot")
 
     df = build_base_snapshot(
         train=train,
@@ -79,7 +85,7 @@ def main():
         end_date=END_DATE,
     )
 
-    print(f"Base snapshot shape: {df.shape}")
+    logger.info(f"Base snapshot shape: {df.shape}")
 
     # -----------------------------------------
     # Persist snapshot (directory-style parquet)
@@ -87,7 +93,7 @@ def main():
     out_path = SNAPSHOTS_DIR / "favorita_train_snapshot_2015.parquet"
     df.to_parquet(out_path, index=False)
 
-    print(f"✅ Training snapshot written to {out_path}")
+    logger.info(f"✅ Training snapshot written to {out_path}")
 
 
 if __name__ == "__main__":
