@@ -10,12 +10,12 @@ class BatchItem(BaseModel):
     item_nbr: int = Field(
         ...,
         description="SKU identifier",
-        example=769314,
+        json_schema_extra={"example": 769314},
     )
     onpromotion: bool = Field(
         ...,
         description="Whether SKU is on promotion",
-        example=True,
+        json_schema_extra={"example": True},
     )
 
 
@@ -23,17 +23,17 @@ class ForecastToOrdersRequest(BaseModel):
     date: str = Field(
         ...,
         description="Decision date (YYYY-MM-DD)",
-        example="2016-04-21",
+        json_schema_extra={"example": "2016-04-21"},
     )
     store_nbr: int = Field(
         ...,
         description="Store number",
-        example=44,
+        json_schema_extra={"example": 44},
     )
     service_level: str = Field(
         ...,
         description="Quantile service level: 'p90' or 'p95' (case-insensitive)",
-        example="p90",
+        json_schema_extra={"example": "p90"},
     )
     items: List[BatchItem] = Field(
         ...,
@@ -44,20 +44,20 @@ class ForecastToOrdersRequest(BaseModel):
         ...,
         gt=0,
         description="Maximum total order quantity (capacity cap)",
-        example=100,
+        json_schema_extra={"example": 100},
     )
     service_floor_ratio: Optional[float] = Field(
         0.0,
         ge=0.0,
         le=1.0,
         description="Minimum fraction of forecast per SKU",
-        example=0.0,
+        json_schema_extra={"example": 0.0},
     )
     perishable_weight: Optional[float] = Field(
         1.0,
         gt=0.0,
         description="Weight multiplier for perishable items",
-        example=1.2,
+        json_schema_extra={"example": 1.2},
     )
 
     @field_validator("service_level")
@@ -129,12 +129,12 @@ class ForecastToOrdersResponse(BaseModel):
     dataset_mode: str = Field(
         ...,
         description="Dataset mode used by API (train or test)",
-        example="test",
+        json_schema_extra={"example": "test"},
     )
     snapshot: str = Field(
         ...,
         description="Featured snapshot file used for inference",
-        example="favorita_test_featured_2016Q1.parquet",
+        json_schema_extra={"example": "favorita_test_featured_2016Q1.parquet"},
     )
 
     summary: ForecastSummary
