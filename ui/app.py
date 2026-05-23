@@ -67,8 +67,8 @@ with st.sidebar:
 
     service_level = st.selectbox(
         "Service level",
-        options=[0.90, 0.95],
-        format_func=lambda x: f"P{int(x*100)}",
+        options=["p90", "p95"],
+        format_func=lambda x: x.upper(),
         index=0,
     )
 
@@ -132,7 +132,7 @@ if run_decision:
     payload = {
         "store_nbr": int(store_nbr),
         "date": date,
-        "service_level": float(service_level),
+        "service_level": service_level,
         "capacity_units": int(capacity_units),
         "items": items_df.to_dict(orient="records"),
     }

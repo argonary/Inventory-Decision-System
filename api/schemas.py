@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 
 
@@ -30,12 +30,10 @@ class ForecastToOrdersRequest(BaseModel):
         description="Store number",
         example=44,
     )
-    service_level: float = Field(
+    service_level: str = Field(
         ...,
-        ge=0.0,
-        le=1.0,
-        description="Quantile service level (e.g. 0.9, 0.95)",
-        example=0.9,
+        description="Quantile service level: 'p90' or 'p95' (case-insensitive)",
+        example="p90",
     )
     items: List[BatchItem] = Field(
         ...,
@@ -62,6 +60,39 @@ class ForecastToOrdersRequest(BaseModel):
         example=1.2,
     )
 
+    @field_validator("service_level")
+    @classmethod
+    def _validate_service_level(cls, v):
+        if not isinstance(v, str):
+            raise ValueError("service_level must be 'p90' or 'p95' (case-insensitive)")
+        normalized = v.strip().lower()
+        if normalized not in ("p90", "p95"):
+            raise ValueError("service_level must be 'p90' or 'p95' (case-insensitive)")
+        return normalized
+
+    @field_validator("capacity_units")
+    @classmethod
+    def _validate_capacity_units(cls, v):
+        if v <= 0:
+            raise ValueError("capacity_units must be a positive integer greater than 0")
+        return v
+
+    @field_validator("items")
+    @classmethod
+    def _validate_items_non_empty(cls, v):
+        if not v:
+            raise ValueError("items list must not be empty")
+        return v
+
+    @field_validator("service_floor_ratio")
+    @classmethod
+    def _validate_service_floor_ratio(cls, v):
+        if v is None:
+            return v
+        if not (0.0 <= v <= 1.0):
+            raise ValueError("service_floor_ratio must be between 0.0 and 1.0 inclusive")
+        return v
+
 
 # =====================================================
 # Response schemas
@@ -87,7 +118,7 @@ class ForecastSummary(BaseModel):
 class ForecastToOrdersResponse(BaseModel):
     store_nbr: int
     date: str
-    service_level: float
+    service_level: str
     capacity_units: int
     fill_capacity: bool
 
@@ -108,3 +139,7 @@ class ForecastToOrdersResponse(BaseModel):
 
     summary: ForecastSummary
     results: List[ForecastResult]
+    not_found: List[int] = Field(
+        default_factory=list,
+        description="Requested item_nbr values not present in the snapshot for the given store/date",
+    )

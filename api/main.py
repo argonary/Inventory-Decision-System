@@ -82,7 +82,8 @@ def forecast_to_orders(req: ForecastToOrdersRequest):
         raise HTTPException(status_code=400, detail="Invalid date format")
 
     store_id = req.store_nbr
-    service_level = req.service_level
+    service_level_label = req.service_level          # "p90" or "p95"
+    service_level = 0.9 if service_level_label == "p90" else 0.95
     capacity = req.capacity_units
     service_floor_ratio = req.service_floor_ratio or 0.0
     perishable_weight = req.perishable_weight or 1.0
@@ -108,6 +109,9 @@ def forecast_to_orders(req: ForecastToOrdersRequest):
 
     df_slice = df_slice[df_slice["item_nbr"].isin(item_map.keys())]
 
+    found_items = {int(x) for x in df_slice["item_nbr"].unique()}
+    not_found = sorted(set(item_map.keys()) - found_items)
+
     if df_slice.empty:
         raise HTTPException(
             status_code=404,
@@ -123,9 +127,6 @@ def forecast_to_orders(req: ForecastToOrdersRequest):
         .drop_duplicates(subset=["item_nbr"], keep="last")
         .reset_index(drop=True)
     )
-
-    if not df_slice["item_nbr"].is_unique:
-        raise HTTPException(status_code=500, detail="Duplicate SKUs in decision slice after dedup")
 
     # -----------------------------
     # Override onpromotion flags
@@ -188,7 +189,7 @@ def forecast_to_orders(req: ForecastToOrdersRequest):
     return {
         "store_nbr": store_id,
         "date": req.date,
-        "service_level": service_level,
+        "service_level": service_level_label,
         "capacity_units": capacity,
         "fill_capacity": False,
         "model_version": MODEL_VERSION_LABEL,
@@ -199,4 +200,5 @@ def forecast_to_orders(req: ForecastToOrdersRequest):
             "total_orders": total_orders,
         },
         "results": results,
+        "not_found": not_found,
     }
