@@ -19,5 +19,8 @@ def apply_all_features(
     df = add_holiday_feature(df, holidays_df)
     df = add_oil_feature(df, oil_df)
     df = add_promotion_feature(df)
+    df = df.sort_values(
+        ["store_nbr", "item_nbr", "date"]
+    ).reset_index(drop=True)
     df = add_lag_features(df, lags=lags, rolls=rolls)
     return df

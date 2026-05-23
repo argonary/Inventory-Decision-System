@@ -3,11 +3,7 @@ import logging
 import pandas as pd
 
 from src.config import SNAPSHOTS_DIR, RAW_DIR
-from src.features.calendar import add_calendar_features
-from src.features.holidays import add_holiday_feature
-from src.features.oil import add_oil_feature
-from src.features.promotion import add_promotion_feature
-from src.features.lags import add_lag_features
+from src.features.feature_pipeline import apply_all_features
 from src.logging_config import configure_logging
 from src.validation.feature_validation import (
     validate_base_snapshot,
@@ -50,21 +46,8 @@ def main():
     # --------------------------------------------------
     # Apply SAME feature steps as training (explicit)
     # --------------------------------------------------
-    logger.info("➕ Adding calendar features")
-    df = add_calendar_features(df)
-
-    logger.info("➕ Adding holiday feature")
-    df = add_holiday_feature(df, holidays)
-
-    logger.info("➕ Adding oil feature")
-    df = add_oil_feature(df, oil)
-
-    logger.info("➕ Adding promotion feature")
-    df = add_promotion_feature(df)
-
-    logger.info("➕ Adding lag & rolling features")
-    df = df.sort_values(["store_nbr", "item_nbr", "date"])
-    df = add_lag_features(df, lags=[7, 14, 28], rolls=[7, 14])
+    logger.info("➕ Applying feature pipeline")
+    df = apply_all_features(df, holidays, oil, lags=[7, 14, 28], rolls=[7, 14])
 
     # --------------------------------------------------
     # Validate (same rules as training)
