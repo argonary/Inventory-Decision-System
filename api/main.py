@@ -13,7 +13,10 @@ from src.config import (
 )
 from src.logging_config import configure_logging
 from src.ml.predictor_factory import build_default_predictor
-from src.optimization.optimizer import optimize_proportional_allocation
+from src.optimization.optimizer import (
+    optimize_lp_allocation,
+    optimize_proportional_allocation,
+)
 from api.schemas import ForecastToOrdersRequest, ForecastToOrdersResponse
 
 configure_logging()
@@ -159,7 +162,12 @@ def forecast_to_orders(req: ForecastToOrdersRequest):
     # Optimize orders
     # Capacity is a CAP, not a target
     # -----------------------------
-    orders = optimize_proportional_allocation(
+    optimize_fn = (
+        optimize_lp_allocation
+        if req.optimizer == "lp"
+        else optimize_proportional_allocation
+    )
+    orders = optimize_fn(
         demand=demand,
         capacity=capacity,
         service_floor_ratio=service_floor_ratio,

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 
 # =====================================================
@@ -58,6 +58,11 @@ class ForecastToOrdersRequest(BaseModel):
         gt=0.0,
         description="Weight multiplier for perishable items",
         json_schema_extra={"example": 1.2},
+    )
+    optimizer: Literal["proportional", "lp"] = Field(
+        "proportional",
+        description="Optimizer backend: 'proportional' (default) or 'lp'",
+        json_schema_extra={"example": "proportional"},
     )
 
     @field_validator("service_level")
