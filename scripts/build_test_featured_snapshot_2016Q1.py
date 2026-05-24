@@ -19,7 +19,7 @@ OUTPUT_SNAPSHOT = "favorita_test_featured_2016Q1.parquet"
 
 
 def main():
-    logger.info("🚀 Building featured TEST snapshot (2016Q1)")
+    logger.info("Building featured TEST snapshot (2016Q1)")
 
     in_path = SNAPSHOTS_DIR / INPUT_SNAPSHOT
     out_path = SNAPSHOTS_DIR / OUTPUT_SNAPSHOT
@@ -30,7 +30,7 @@ def main():
     # --------------------------------------------------
     # Load base snapshot
     # --------------------------------------------------
-    logger.info("📥 Loading base test snapshot")
+    logger.info("Loading base test snapshot")
     df = pd.read_parquet(in_path)
     logger.info(f"Base snapshot shape: {df.shape}")
 
@@ -39,20 +39,20 @@ def main():
     # --------------------------------------------------
     # Load auxiliary tables
     # --------------------------------------------------
-    logger.info("📦 Loading auxiliary tables")
+    logger.info("Loading auxiliary tables")
     holidays = pd.read_csv(RAW_DIR / "holidays_events.csv", parse_dates=["date"])
     oil = pd.read_csv(RAW_DIR / "oil.csv", parse_dates=["date"])
 
     # --------------------------------------------------
     # Apply SAME feature steps as training (explicit)
     # --------------------------------------------------
-    logger.info("➕ Applying feature pipeline")
+    logger.info("Applying feature pipeline")
     df = apply_all_features(df, holidays, oil, lags=[7, 14, 28], rolls=[7, 14])
 
     # --------------------------------------------------
     # Validate (same rules as training)
     # --------------------------------------------------
-    logger.info("🔎 Validating featured snapshot")
+    logger.info("Validating featured snapshot")
     validate_featured_snapshot(df)
 
     # --------------------------------------------------
@@ -68,7 +68,7 @@ def main():
     # --------------------------------------------------
     df.to_parquet(out_path, index=False)
 
-    logger.info(f"✅ Test featured snapshot written to {out_path}")
+    logger.info(f"Test featured snapshot written to {out_path}")
     logger.info(f"Final shape: {df.shape}")
 
 

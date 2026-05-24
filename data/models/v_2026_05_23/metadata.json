@@ -1,6 +1,6 @@
 {
   "version": "v_2026_05_23",
-  "trained_at": "2026-05-23T17:30:42.886350Z",
+  "trained_at": "2026-05-23T20:12:33.433368Z",
   "dataset": "favorita_train_featured_2015.parquet",
   "train_window": [
     "2013-01-01",

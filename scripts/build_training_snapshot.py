@@ -23,12 +23,12 @@ TOP_N_ITEMS = 800
 
 
 def main():
-    logger.info("🚀 Building training snapshot with universe selection")
+    logger.info("Building training snapshot with universe selection")
 
     # -----------------------------------------
     # Load raw training data (minimal columns)
     # -----------------------------------------
-    logger.info("📥 Loading raw train.csv")
+    logger.info("Loading raw train.csv")
     train = pd.read_csv(
         RAW_DIR / "train.csv",
         usecols=[
@@ -47,7 +47,7 @@ def main():
     # -----------------------------------------
     # Universe selection (CRITICAL STEP)
     # -----------------------------------------
-    logger.info("🔎 Selecting store/item universe")
+    logger.info("Selecting store/item universe")
 
     stores_u, items_u = select_store_item_universe(
         train=train,
@@ -68,14 +68,14 @@ def main():
     # -----------------------------------------
     # Load dimension tables
     # -----------------------------------------
-    logger.info("📦 Loading dimension tables")
+    logger.info("Loading dimension tables")
     items = pd.read_csv(RAW_DIR / "items.csv")
     stores = pd.read_csv(RAW_DIR / "stores.csv")
 
     # -----------------------------------------
     # Build base snapshot (date filtering + joins)
     # -----------------------------------------
-    logger.info("🏗️ Building base training snapshot")
+    logger.info("Building base training snapshot")
 
     df = build_base_snapshot(
         train=train,
@@ -93,7 +93,7 @@ def main():
     out_path = SNAPSHOTS_DIR / "favorita_train_snapshot_2015.parquet"
     df.to_parquet(out_path, index=False)
 
-    logger.info(f"✅ Training snapshot written to {out_path}")
+    logger.info(f"Training snapshot written to {out_path}")
 
 
 if __name__ == "__main__":

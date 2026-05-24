@@ -39,7 +39,7 @@ def validate_base_snapshot(df: pd.DataFrame) -> None:
     if df.empty:
         raise ValueError("Base snapshot is empty")
 
-    logger.info("✅ Base snapshot validation passed")
+    logger.info("Base snapshot validation passed")
 
 
 # ============================================================
@@ -123,4 +123,4 @@ def validate_featured_snapshot(
             f"{missing_non_null_cols}"
         )
 
-    logger.info("✅ Featured snapshot validation passed")
+    logger.info("Featured snapshot validation passed")

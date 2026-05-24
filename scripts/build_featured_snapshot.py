@@ -39,7 +39,7 @@ def build_featured_snapshot(
     # -----------------------------
     # Feature engineering
     # -----------------------------
-    logger.info("➕ Applying feature pipeline")
+    logger.info("Applying feature pipeline")
     df = apply_all_features(df, holidays, oil, lags=LAGS, rolls=ROLLS)
 
     # -----------------------------
@@ -51,7 +51,7 @@ def build_featured_snapshot(
 
 
 def main():
-    logger.info("🚀 Building featured training snapshot")
+    logger.info("Building featured training snapshot")
 
     # -----------------------------------------
     # Load base snapshot
@@ -91,7 +91,7 @@ def main():
     out_path = SNAPSHOTS_DIR / "favorita_train_featured_2015.parquet"
     df_featured.to_parquet(out_path, index=False)
 
-    logger.info(f"✅ Featured snapshot written to {out_path}")
+    logger.info(f"Featured snapshot written to {out_path}")
     logger.info(f"Final shape: {df_featured.shape}")
 
 

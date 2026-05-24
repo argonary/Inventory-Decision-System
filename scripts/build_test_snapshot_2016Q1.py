@@ -17,12 +17,12 @@ OUTPUT_NAME = "favorita_test_snapshot_2016Q1.parquet"
 
 
 def main():
-    logger.info("🚀 Building 2016Q1 test snapshot")
+    logger.info("Building 2016Q1 test snapshot")
 
     # --------------------------------------------------
     # Load raw train.csv (minimal columns)
     # --------------------------------------------------
-    logger.info("📥 Loading raw train.csv")
+    logger.info("Loading raw train.csv")
     train_df = pd.read_csv(
         RAW_DIR / "train.csv",
         usecols=["date", "store_nbr", "item_nbr", "unit_sales", "onpromotion"],
@@ -34,20 +34,20 @@ def main():
     # --------------------------------------------------
     # Load dimension tables
     # --------------------------------------------------
-    logger.info("📦 Loading dimension tables")
+    logger.info("Loading dimension tables")
     items = pd.read_csv(RAW_DIR / "items.csv")
     stores = pd.read_csv(RAW_DIR / "stores.csv")
 
     # --------------------------------------------------
     # Reuse SAME universe logic as training
     # --------------------------------------------------
-    logger.info("🔎 Selecting store/item universe (same as training)")
+    logger.info("Selecting store/item universe (same as training)")
     store_ids, item_ids = select_store_item_universe(train_df)
 
     # --------------------------------------------------
     # Filter to 2016 Jan–Apr + universe
     # --------------------------------------------------
-    logger.info("✂️ Filtering to Jan–Apr 2016")
+    logger.info("Filtering to Jan–Apr 2016")
     mask = (
         (train_df["date"] >= START_DATE)
         & (train_df["date"] <= END_DATE)
@@ -61,7 +61,7 @@ def main():
     # --------------------------------------------------
     # Build base snapshot (same logic as training)
     # --------------------------------------------------
-    logger.info("🏗️ Building base snapshot")
+    logger.info("Building base snapshot")
     snapshot = build_base_snapshot(
     df_slice,
     items,
@@ -78,7 +78,7 @@ def main():
 
     snapshot.to_parquet(out_path, index=False)
 
-    logger.info(f"✅ Test snapshot written to {out_path}")
+    logger.info(f"Test snapshot written to {out_path}")
     logger.info(f"Final shape: {snapshot.shape}")
 
 
