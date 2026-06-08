@@ -4,12 +4,13 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from pathlib import Path
+import os
 
 # =====================================================
 # App Config
 # =====================================================
 
-API_BASE_URL = "http://127.0.0.1:8000"
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 
 DEFAULT_STORE = 44
 DEFAULT_DATE = "2016-04-21"

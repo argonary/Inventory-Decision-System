@@ -1,0 +1,31 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      PYTHONPATH: /app
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request, sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8000/health').status == 200 else sys.exit(1)"]
+      interval: 10s
+      retries: 3
+      start_period: 30s
+
+  ui:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM python:3.11-slim
+        WORKDIR /app
+        RUN pip install --no-cache-dir streamlit requests pandas numpy plotly
+        COPY ui ./ui
+    environment:
+      API_BASE_URL: ${API_BASE_URL:-http://api:8000}
+    command: ["streamlit", "run", "ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8501:8501"
