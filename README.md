@@ -5,7 +5,7 @@ a list of SKUs, and a warehouse capacity, the system forecasts demand at a
 chosen service level (P90 or P95) using LightGBM quantile regression, then runs
 a capacity-constrained optimizer to produce integer order quantities per SKU.
 The end-to-end stack covers raw-data ingestion, feature engineering, model
-training, a FastAPI inference service, and a Streamlit decision UI — all
+training, a FastAPI inference service, and a Streamlit decision UI, all of which is 
 orchestrated by Prefect and deployable with Docker Compose.
 
 ## Demo
@@ -83,7 +83,7 @@ just a raw forecast.
   LightGBM was chosen because it natively supports the pinball loss and trains
   quickly on the tabular lag/calendar/promotion feature set.
 
-- **Two optimizers — proportional vs LP — chosen per request.** The proportional
+- **Two optimizers (proportional vs LP) chosen per request.** The proportional
   allocator with largest-remainder rounding is cheap, deterministic, and gives
   intuitive "everyone gets a fair share of capacity" behavior. The LP backend
   (`scipy.optimize.linprog`, HiGHS) is preferable when service floors and
@@ -104,7 +104,7 @@ just a raw forecast.
 
 - **Prefect for orchestration, not a plain script.** The rebuild has five
   sequential steps and any one of them can fail on bad raw data. Prefect gives
-  retries, structured logs per task, and a UI for inspecting failures —
+  retries, structured logs per task, and a UI for inspecting failures, which
   capabilities a shell script can only approximate. `rebuild_pipeline.ps1` is
   kept around as a lightweight alternative for users who don't want Prefect.
 
@@ -159,18 +159,18 @@ The browser opens automatically at <http://localhost:8501>.
 The Prefect flow in `pipeline/prefect_pipeline.py` runs these five tasks
 sequentially:
 
-1. **Build base training snapshot 2013-2015** — joins raw sales, items,
+1. **Build base training snapshot 2013-2015:** joins raw sales, items,
    stores, holidays, and oil CSVs into a single parquet table covering the
    training window.
-2. **Build featured training snapshot** — applies the feature pipeline
+2. **Build featured training snapshot:** applies the feature pipeline
    (calendar, holidays, oil, promotion, lag, categorical) to the base
    training snapshot.
-3. **Build base test snapshot 2016 Q1** — assembles the out-of-time test
+3. **Build base test snapshot 2016 Q1:** assembles the out-of-time test
    table from raw CSVs, with January 2016 kept available so 28-day lags are
    fully populated when the test window starts in February.
-4. **Build featured test snapshot 2016 Q1** — applies the same feature
+4. **Build featured test snapshot 2016 Q1:** applies the same feature
    pipeline to the test snapshot so the API can serve it directly.
-5. **Train quantile models and update latest** — trains a LightGBM quantile
+5. **Train quantile models and update latest:** trains a LightGBM quantile
    model per requested quantile (default 0.90, 0.95), writes versioned
    artifacts to `data/models/v_<date>/`, and updates `data/models/latest/`.
 
